@@ -8,8 +8,22 @@
 	 */
 
 	class NetflixProduct {
+		/**
+		 * Name of the rights holder of the content
+		 * @var string
+		 */
 		public $ContentProvider;
+
+		/**
+		 * First year the content was available
+		 * @var int
+		 */
 		public $FirstReleaseYear;
+
+		/**
+		 * Name of the Movie or TV Episode
+		 * @var string
+		 */
 		public $OriginalTitle;
 
 		/**
@@ -19,7 +33,12 @@
 	}
 
 	class NetflixTvEpisode extends NetflixProduct {
+		/**
+		 * Name of the series
+		 * @var string
+		 */
 		public $ShowName;
+
 		public $Type = 'TV_EPISODE';
 	}
 
@@ -40,7 +59,7 @@
 		 * Language of the title cards and credits
 		 * @var string
 		 */
-		public $TextLanguage = 'en';
+		public $TextLanguage;
 
 		/**
 		 * Audio embedded in the video file
@@ -54,7 +73,7 @@
 		 * Spoken language
 		 * @var string
 		 */
-		public $Language = 'en';
+		public $Language;
 
 		/**
 		 * Audio channel mapping, in order
@@ -142,17 +161,53 @@
 		die();
 	}
 
+	function Generate_TvEpisode() {
+		$episode = new NetflixTvEpisode();
+		$episode->ContentProvider = $_POST['inputContentProvider'];
+		$episode->ShowName = $_POST['inputShowName'];
+		$episode->OriginalTitle = $_POST['inputOriginalTitle'];
+		$episode->FirstReleaseYear = $_POST['inputFirstReleaseYear'];
+
+		$videoFile = new NetflixVideo($_POST['inputVideoFileName']);
+		$videoFile->TextLanguage = $_POST['optionsContentLanguage'];
+		$audio = new NetflixAudio();
+		$audio->Language = $_POST['optionsContentLanguage'];
+
+		switch ($_POST['optionsAudioChannels']) {
+			case '2-0':
+				$audio->Channels = array('L', 'R');
+				break;
+
+			case '5-1';
+				$audio->Channels = array('L', 'R', 'C', 'LFE', 'LS', 'RS');
+				break;
+
+			case '7-1';
+				$audio->Channels = array('L', 'R', 'C', 'LFE', 'LS', 'RS', 'LT', 'RT');
+				break;
+			
+			default:
+				throw new Exception($_POST['optionsAudioChannels']);
+				
+		}
+		
+		$videoFile->Audio[] = $audio;
+		$episode->Files[] = $videoFile;
+
+		GenerateXml($episode);
+	}
+
+	if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+		switch ($_POST['optionsContentType']) {
+			case 'TV_EPISODE':
+				Generate_TvEpisode();
+				break;
+			
+			default:
+				throw new Exception($_POST['optionsContentType']);
+				
+		}
+	}
+
 	// Fake Episode
-	$episode = new NetflixTvEpisode();
-	$episode->ContentProvider = 'Augusto';
-	$episode->ShowName = 'SHOW NAME';
-	$episode->OriginalTitle = 'EPISODE TITLE';
-	$episode->FirstReleaseYear = 2012;
-
-	$videoFile = new NetflixVideo('FILE_NAME');
-	$audio = new NetflixAudio();
-	$audio->Channels = array('L', 'R', 'C', 'LFE', 'LS', 'RS', 'LT', 'RT');
-	$videoFile->Audio[] = $audio;
-	$episode->Files[] = $videoFile;
-
-	//GenerateXml($episode);
+	
